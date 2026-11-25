@@ -1,0 +1,11 @@
+.git
+.env
+**/node_modules
+frontend/dist
+frontend/.angular
+backend/target
+backend/data
+data
+backups
+docs
+tests

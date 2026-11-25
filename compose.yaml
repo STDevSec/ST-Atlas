@@ -1,0 +1,124 @@
+# ST Atlas — self-hosted stack.
+#   docker compose up -d --build      → http://localhost:8080
+# Only `web` publishes a port (127.0.0.1 by default). Everything else lives on
+# internal networks without internet access. See docs/deployment/INSTALLATION.md.
+
+name: st-atlas
+
+services:
+  # One-shot: creates random service credentials on first start (no default passwords).
+  secrets-init:
+    image: alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+    command:
+      - sh
+      - -c
+      - |
+        umask 077
+        if [ ! -s /secrets/ATLAS_DB_PASSWORD ]; then
+          head -c 32 /dev/urandom | base64 | tr -d '/+=\n' > /secrets/ATLAS_DB_PASSWORD
+          echo "generated database password"
+        fi
+        chown 70:10001 /secrets/ATLAS_DB_PASSWORD && chmod 440 /secrets/ATLAS_DB_PASSWORD
+    volumes:
+      - secrets:/secrets
+    network_mode: none
+    restart: "no"
+
+  db:
+    image: postgres:18.7-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+    environment:
+      POSTGRES_DB: atlas
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD_FILE: /run/atlas-secrets/ATLAS_DB_PASSWORD
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - secrets:/run/atlas-secrets:ro
+    networks: [app]
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    security_opt: ["no-new-privileges:true"]
+    shm_size: 256m
+    restart: unless-stopped
+
+  gotenberg:
+    image: gotenberg/gotenberg:9.10.0@sha256:2ce6fcd3f5019c82b0376065b9103d6d4938d34c1c06a39a8263a9fcf47a6f5b
+    # JavaScript off, no remote downloads, no webhooks: it only turns our HTML into PDF (T-12).
+    command:
+      - gotenberg
+      - --chromium-disable-javascript=true
+      - --api-disable-download-from=true
+      - --webhook-disable=true
+      - --api-timeout=60s
+      - --log-level=warn
+    networks: [docproc]
+    read_only: true
+    tmpfs: [/tmp, /home/gotenberg]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    image: st-atlas-backend:local
+    environment:
+      ATLAS_DB_URL: jdbc:postgresql://db:5432/atlas
+      ATLAS_DB_USER: atlas
+      ATLAS_GOTENBERG_URL: http://gotenberg:3000
+      ATLAS_SECURE_COOKIES: ${ATLAS_SECURE_COOKIES:-false}
+      ATLAS_MAX_UPLOAD_SIZE: ${ATLAS_MAX_UPLOAD_SIZE:-25MB}
+      ATLAS_SESSION_IDLE_TIMEOUT: ${ATLAS_SESSION_IDLE_TIMEOUT:-2h}
+      ATLAS_API_DOCS_ENABLED: ${ATLAS_API_DOCS_ENABLED:-false}
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/atlas-secrets/
+    volumes:
+      - storage:/data
+      - secrets:/run/atlas-secrets:ro
+    networks: [app, docproc]
+    depends_on:
+      db: {condition: service_healthy}
+      gotenberg: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1536m
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend.Dockerfile
+    image: st-atlas-web:local
+    ports:
+      - "${ATLAS_BIND_ADDRESS:-127.0.0.1}:${ATLAS_PORT:-8080}:8080"
+    networks: [edge, app]
+    depends_on:
+      backend: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  app: {internal: true}
+  docproc: {internal: true}
+
+volumes:
+  pgdata: {}
+  storage: {}
+  secrets: {}

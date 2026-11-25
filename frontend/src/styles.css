@@ -1,0 +1,125 @@
+@import "tailwindcss";
+@import "pdfjs-dist/web/pdf_viewer.css";
+
+/* Dark mode follows the `dark` class on <html> (persisted per user). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. Restrained, neutral palette with one accent; semantic names so components
+ * never hard-code colours. Documented in docs/development/DESIGN_SYSTEM.md.
+ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --color-accent-50: #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-500: #3b6fd6;
+  --color-accent-600: #2f5dbd;
+  --color-accent-700: #264c9c;
+  --color-sev-critical: #7f1d1d;
+  --color-sev-high: #b91c1c;
+  --color-sev-medium: #b45309;
+  --color-sev-low: #1d4ed8;
+  --color-sev-info: #4b5563;
+}
+
+:root {
+  --surface: #ffffff;
+  --surface-muted: #f7f8fa;
+  --surface-raised: #ffffff;
+  --border: #e3e6eb;
+  --border-strong: #cfd4dc;
+  --text: #1c2027;
+  --text-muted: #5c6471;
+  --text-faint: #8a919c;
+  --focus: #3b6fd6;
+  color-scheme: light;
+}
+
+.dark {
+  --surface: #121418;
+  --surface-muted: #181b20;
+  --surface-raised: #1d2026;
+  --border: #2a2e36;
+  --border-strong: #3a3f49;
+  --text: #e6e8eb;
+  --text-muted: #a3a9b4;
+  --text-faint: #737a86;
+  --focus: #6f9cf0;
+  color-scheme: dark;
+}
+
+@layer base {
+  html, body { height: 100%; }
+  body { background: var(--surface-muted); color: var(--text); font-family: var(--font-sans); font-size: 14px;
+         -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  h1, h2, h3 { letter-spacing: -0.01em; }
+}
+
+@layer components {
+  .card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 8px; }
+  .muted { color: var(--text-muted); }
+  .faint { color: var(--text-faint); }
+  .hairline { border-color: var(--border); }
+  .input { width: 100%; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px;
+           padding: 0.45rem 0.65rem; color: var(--text); }
+  .input:focus { outline: 2px solid var(--focus); outline-offset: -1px; border-color: transparent; }
+  .input[aria-invalid="true"] { border-color: #dc2626; }
+  .label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 6px; padding: 0.42rem 0.8rem;
+         font-weight: 500; border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--text);
+         white-space: nowrap; cursor: pointer; }
+  .btn:hover:not(:disabled) { background: var(--surface-muted); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-primary { background: var(--color-accent-600); border-color: var(--color-accent-600); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--color-accent-700); }
+  .btn-ghost { border-color: transparent; background: transparent; }
+  .btn-danger { color: #b91c1c; }
+  .btn-sm { padding: 0.25rem 0.55rem; font-size: 13px; }
+  .table { width: 100%; border-collapse: collapse; }
+  .table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text-muted); padding: 8px 12px;
+              border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+  .table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .table tr:last-child td { border-bottom: none; }
+  .table tbody tr:hover { background: var(--surface-muted); }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+          font-size: 12px; border: 1px solid var(--border); color: var(--text-muted); background: var(--surface); }
+  .badge { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 4px; font-size: 11px;
+           font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+  .skeleton { background: linear-gradient(90deg, var(--surface-muted), var(--border), var(--surface-muted));
+              background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
+  @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+}
+
+/* Report Studio (ProseMirror) */
+.ProseMirror { outline: none; min-height: 60vh; line-height: 1.65; font-size: 15px; }
+.ProseMirror h1 { font-size: 1.6rem; font-weight: 650; margin: 1.4rem 0 .6rem; }
+.ProseMirror h2 { font-size: 1.3rem; font-weight: 600; margin: 1.2rem 0 .5rem; }
+.ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin: 1rem 0 .4rem; }
+.ProseMirror p { margin: .45rem 0; }
+.ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
+.ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
+.ProseMirror blockquote { border-left: 3px solid var(--color-accent-500); padding-left: .9rem; color: var(--text-muted); }
+.ProseMirror pre { background: #0f1720; color: #e6edf3; border-radius: 6px; padding: .8rem 1rem; font-family: var(--font-mono);
+                   font-size: 13px; overflow-x: auto; }
+.ProseMirror code { font-family: var(--font-mono); font-size: .9em; background: var(--surface-muted); padding: 0 .25rem; border-radius: 3px; }
+.ProseMirror pre code { background: none; padding: 0; }
+.ProseMirror table { border-collapse: collapse; width: 100%; margin: .6rem 0; }
+.ProseMirror th, .ProseMirror td { border: 1px solid var(--border-strong); padding: .35rem .5rem; vertical-align: top; }
+.ProseMirror th { background: var(--surface-muted); font-weight: 600; }
+.ProseMirror .selectedCell { background: color-mix(in srgb, var(--color-accent-500) 12%, transparent); }
+.ProseMirror hr { border: none; border-top: 1px solid var(--border-strong); margin: 1rem 0; }
+.ProseMirror mark { background: #fde68a; color: #1c2027; }
+.ProseMirror a { color: var(--color-accent-600); text-decoration: underline; }
+.ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-faint);
+                                                     float: left; height: 0; pointer-events: none; }
+.hljs-comment, .hljs-quote { color: #8b949e; } .hljs-keyword, .hljs-selector-tag { color: #ff7b72; }
+.hljs-string, .hljs-attr { color: #a5d6ff; } .hljs-number, .hljs-literal { color: #79c0ff; }
+.hljs-title, .hljs-section { color: #d2a8ff; } .hljs-built_in, .hljs-type { color: #ffa657; }
+
+.atlas-page-break { border-top: 2px dashed var(--border-strong); color: var(--text-faint); font-size: 11px; text-align: center;
+                    margin: 1.2rem 0; padding-top: 2px; user-select: none; }
+.atlas-block { border: 1px solid var(--border-strong); border-left: 3px solid var(--color-accent-500); border-radius: 6px;
+               padding: .5rem .75rem; margin: .6rem 0; background: var(--surface-muted); font-size: 13px; user-select: none; }
+.ProseMirror-selectednode.atlas-block, .ProseMirror-selectednode.atlas-figure img { outline: 2px solid var(--focus); }

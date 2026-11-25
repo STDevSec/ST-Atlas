@@ -1,0 +1,12 @@
+# Development overrides: expose PostgreSQL and Gotenberg on localhost so the backend can run
+# from the IDE (./mvnw spring-boot:run) and the frontend from `npm start`.
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d db gotenberg
+services:
+  db:
+    ports: ["127.0.0.1:5432:5432"]
+    networks: [app, devnet]
+  gotenberg:
+    ports: ["127.0.0.1:3000:3000"]
+    networks: [docproc, devnet]
+networks:
+  devnet: {}

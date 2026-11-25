@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: st-atlas
+  threads:
+    virtual:
+      enabled: true
+  jackson:
+    deserialization:
+      # Jackson 3 rejects absent primitives by default; an omitted boolean means false.
+      FAIL_ON_NULL_FOR_PRIMITIVES: false
+  datasource:
+    url: ${ATLAS_DB_URL:jdbc:postgresql://localhost:5432/atlas}
+    username: ${ATLAS_DB_USER:atlas}
+    password: ${ATLAS_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  session:
+    timeout: ${ATLAS_SESSION_IDLE_TIMEOUT:2h}
+    jdbc:
+      initialize-schema: never
+  servlet:
+    multipart:
+      max-file-size: ${ATLAS_MAX_UPLOAD_SIZE:25MB}
+      max-request-size: ${ATLAS_MAX_UPLOAD_SIZE:25MB}
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
+
+server:
+  port: 8081
+  forward-headers-strategy: native
+  error:
+    include-stacktrace: never
+    include-message: never
+  servlet:
+    session:
+      cookie:
+        name: ATLAS_SESSION
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    enabled: ${ATLAS_API_DOCS_ENABLED:false}
+    path: /api/v1/openapi.json
+  swagger-ui:
+    enabled: ${ATLAS_API_DOCS_ENABLED:false}
+    path: /api/v1/docs
+
+atlas:
+  data-dir: ${ATLAS_DATA_DIR:./data}
+  storage-dir: ${ATLAS_STORAGE_DIR:${atlas.data-dir}/storage}
+  encryption-key: ${ATLAS_ENCRYPTION_KEY:}
+  secure-cookies: ${ATLAS_SECURE_COOKIES:false}
+  api-docs-enabled: ${ATLAS_API_DOCS_ENABLED:false}
+  gotenberg-url: ${ATLAS_GOTENBERG_URL:http://localhost:3000}
+  tika-url: ${ATLAS_TIKA_URL:http://localhost:9998}
